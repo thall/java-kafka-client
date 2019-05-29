@@ -13,22 +13,11 @@
  */
 package io.opentracing.contrib.kafka.streams;
 
-import static org.awaitility.Awaitility.await;
-import static org.hamcrest.core.IsEqual.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-
 import io.opentracing.contrib.kafka.TracingKafkaProducer;
 import io.opentracing.contrib.kafka.TracingKafkaUtils;
 import io.opentracing.mock.MockSpan;
 import io.opentracing.mock.MockTracer;
 import io.opentracing.tag.Tags;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.concurrent.Callable;
-import java.util.concurrent.TimeUnit;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -45,6 +34,18 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.springframework.kafka.test.rule.EmbeddedKafkaRule;
 import org.springframework.kafka.test.utils.KafkaTestUtils;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
+
+import static org.awaitility.Awaitility.await;
+import static org.hamcrest.core.IsEqual.equalTo;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 public class TracingKafkaStreamsTest {
 
@@ -112,6 +113,7 @@ public class TracingKafkaStreamsTest {
         assertEquals(Tags.SPAN_KIND_PRODUCER, mockSpan.tags().get(Tags.SPAN_KIND.getKey()));
         String topicName = (String) mockSpan.tags().get(Tags.MESSAGE_BUS_DESTINATION.getKey());
         assertTrue(topicName.equals("stream-out") || topicName.equals("stream-test"));
+        assertEquals(0L, mockSpan.parentId());
       } else if (operationName.equals(TracingKafkaUtils.FROM_PREFIX + "stream-test")) {
         assertEquals(Tags.SPAN_KIND_CONSUMER, mockSpan.tags().get(Tags.SPAN_KIND.getKey()));
         assertEquals(0, mockSpan.tags().get("partition"));
@@ -119,6 +121,9 @@ public class TracingKafkaStreamsTest {
         assertTrue(offset == 0L || offset == 1L || offset == 2L);
         String topicName = (String) mockSpan.tags().get("topic");
         assertTrue(topicName.equals("stream-out") || topicName.equals("stream-test"));
+        assertEquals(2L, mockSpan.parentId());
+     } else if (operationName.equals(TracingKafkaUtils.TO_PREFIX + "stream-out")) {
+        assertEquals(3L, mockSpan.parentId());
       }
       assertEquals("java-kafka", mockSpan.tags().get(Tags.COMPONENT.getKey()));
       assertEquals(0, mockSpan.generatedErrors().size());

@@ -19,12 +19,13 @@ import io.opentracing.SpanContext;
 import io.opentracing.Tracer;
 import io.opentracing.propagation.Format;
 import io.opentracing.tag.Tags;
-import java.util.function.BiFunction;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.header.Headers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.function.BiFunction;
 
 public class TracingKafkaUtils {
 
@@ -133,7 +134,7 @@ public class TracingKafkaUtils {
     span.finish();
 
     // Inject created span context into record headers for extraction by client to continue span chain
-    TracingKafkaUtils.injectSecond(span.context(), record.headers(), tracer);
+    TracingKafkaUtils.inject(span.context(), record.headers(), tracer);
   }
 
 }
