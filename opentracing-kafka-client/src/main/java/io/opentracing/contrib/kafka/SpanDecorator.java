@@ -15,12 +15,14 @@ package io.opentracing.contrib.kafka;
 
 import io.opentracing.Span;
 import io.opentracing.tag.Tags;
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.util.HashMap;
-import java.util.Map;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.producer.ProducerRecord;
+
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Map;
 
 
 class SpanDecorator {
@@ -37,6 +39,26 @@ class SpanDecorator {
     if (record.partition() != null) {
       span.setTag("partition", record.partition());
     }
+
+    span.setTag("kafka.key", objectToString(record.key()));
+  }
+
+  private static <V> String objectToString(V v) {
+    if (v instanceof byte[]) {
+      byte[] b = (byte[]) v;
+      return new String(b, StandardCharsets.UTF_8);
+    } else if (v instanceof Byte[]) {
+      Byte[] b1 = (Byte[]) v;
+      byte[] b2 = new byte[b1.length];
+
+      for (int i = 0; i < b1.length; i++) {
+        b2[i] = b1[i];
+      }
+
+      return new String(b2, StandardCharsets.UTF_8);
+    } else {
+      return String.valueOf(v);
+    }
   }
 
   /**
@@ -44,6 +66,7 @@ class SpanDecorator {
    */
   static <K, V> void onResponse(ConsumerRecord<K, V> record, Span span) {
     setCommonTags(span);
+    span.setTag("kafka.key", objectToString(record.key()));
     span.setTag("partition", record.partition());
     span.setTag("topic", record.topic());
     span.setTag("offset", record.offset());

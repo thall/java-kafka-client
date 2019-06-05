@@ -213,6 +213,10 @@ public class TracingKafkaTest {
     createConsumer(latch, null, false, null);
 
     producer.close();
+    List<MockSpan> mockSpans = mockTracer.finishedSpans();
+    assertEquals(2, mockSpans.size());
+    assertEquals(mockSpans.get(0).tags().get("kafka.key"), "null");
+    assertEquals(mockSpans.get(1).tags().get("kafka.key"), "null");
   }
 
   @Test
@@ -332,17 +336,20 @@ public class TracingKafkaTest {
       if (operationName.equals(TracingKafkaUtils.TO_PREFIX + "messages")) {
         assertEquals(Tags.SPAN_KIND_PRODUCER, mockSpan.tags().get(Tags.SPAN_KIND.getKey()));
         assertEquals("messages", mockSpan.tags().get(Tags.MESSAGE_BUS_DESTINATION.getKey()));
+        assertEquals("1", mockSpan.tags().get("kafka.key"));
       } else if (operationName.equals(TracingKafkaUtils.FROM_PREFIX + "messages")) {
         assertEquals(Tags.SPAN_KIND_CONSUMER, mockSpan.tags().get(Tags.SPAN_KIND.getKey()));
         assertEquals(0, mockSpan.tags().get("partition"));
         long offset = (Long) mockSpan.tags().get("offset");
         assertTrue(offset >= 0L);
         assertEquals("messages", mockSpan.tags().get("topic"));
+        assertEquals("1", mockSpan.tags().get("kafka.key"));
       }
       assertEquals(SpanDecorator.COMPONENT_NAME, mockSpan.tags().get(Tags.COMPONENT.getKey()));
       assertEquals(0, mockSpan.generatedErrors().size());
       assertTrue(operationName.equals(TracingKafkaUtils.TO_PREFIX + "messages")
           || operationName.equals(TracingKafkaUtils.FROM_PREFIX + "messages"));
+      assertEquals("1", mockSpan.tags().get("kafka.key"));
     }
   }
 
